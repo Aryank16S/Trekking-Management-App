@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from config import Config
 from models import db, User
@@ -6,6 +7,7 @@ from routes.auth import auth_bp
 from routes.admin import admin_bp
 from routes.staff import staff_bp
 from routes.user import user_bp
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 
@@ -22,22 +24,24 @@ login_manager.login_view = "auth.login" #type:ignore
 with app.app_context():
     db.create_all()
 
-    admin = User.query.filter_by(email="admin@gmail.com").first()
+    admin_email = os.getenv("ADMIN_EMAIL")
+    admin_password = os.getenv("ADMIN_PASSWORD")
 
-    if not admin:
-        from werkzeug.security import generate_password_hash
+    if admin_email and admin_password:
+        admin = User.query.filter_by(email=admin_email).first()
 
-        admin = User(
-            name="Admin",
-            email="admin@gmail.com",
-            password=generate_password_hash("Admin@123"),
-            role="admin",
-            approved=True,
-            blacklisted=False
-        )
+        if not admin:
+            admin = User(
+                name="Admin",
+                email=admin_email,
+                password=generate_password_hash(admin_password),
+                role="admin",
+                approved=True,
+                blacklisted=False
+            )
 
-        db.session.add(admin)
-        db.session.commit()
+            db.session.add(admin)
+            db.session.commit()
     
 @login_manager.user_loader
 def load_user(user_id):

@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <span class="badge bg-success px-3 py-2 fs-6 mb-2">
+      <i class="bi bi-cpu-fill me-1"></i> AI & ML Powered
+    </span>
+    <h1 class="fw-bold">Smart Trek Matchmaker</h1>
+    <p class="text-muted lead">
+      Let our Content-Based Machine Learning model recommend the perfect Himalayan and Western Ghats trails based on your personal fitness, schedule, and budget.
+    </p>
+  </div>
+
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-success text-white py-3">
+          <h5 class="mb-0">
+            <i class="bi bi-sliders me-2"></i> Configure Your Preferences
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('ai.matchmaker') }}">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Fitness Experience</label>
+                <select name="fitness_level" class="form-select">
+                  <option value="Beginner" {% if fitness_level == 'Beginner' %}selected{% endif %}>
+                    Beginner (First-timer / Light walks)
+                  </option>
+                  <option value="Intermediate" {% if fitness_level == 'Intermediate' %}selected{% endif %}>
+                    Intermediate (Active / Regular jogs)
+                  </option>
+                  <option value="Advanced" {% if fitness_level == 'Advanced' %}selected{% endif %}>
+                    Advanced (Marathoner / Seasoned trekker)
+                  </option>
+                </select>
+                <div class="form-text">Used to match trail elevation and gradient.</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Max Budget (₹)</label>
+                <input
+                  type="number"
+                  name="budget"
+                  class="form-control"
+                  value="{{ budget }}"
+                  min="1500"
+                  step="500"
+                  placeholder="e.g. 12000"
+                />
+                <div class="form-text">Upper spending limit per person.</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Max Duration (Days)</label>
+                <input
+                  type="number"
+                  name="duration"
+                  class="form-control"
+                  value="{{ duration }}"
+                  min="1"
+                  max="20"
+                  placeholder="e.g. 6"
+                />
+                <div class="form-text">Maximum days you can travel.</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Terrain / Vibe</label>
+                <select name="terrain" class="form-select">
+                  <option value="All" {% if terrain == 'All' %}selected{% endif %}>Any Landscape</option>
+                  <option value="Snow" {% if terrain == 'Snow' %}selected{% endif %}>Snow & Frozen Lakes</option>
+                  <option value="Flowers" {% if terrain == 'Flowers' %}selected{% endif %}>Alpine Flowers & Valleys</option>
+                  <option value="Pass" {% if terrain == 'Pass' %}selected{% endif %}>High Altitude Passes</option>
+                  <option value="Fort" {% if terrain == 'Fort' %}selected{% endif %}>Historic Forts & Ridges</option>
+                  <option value="Himalayas" {% if terrain == 'Himalayas' %}selected{% endif %}>Grand Himalayas</option>
+                </select>
+                <div class="form-text">Target environment and sights.</div>
+              </div>
+            </div>
+
+            <div class="text-center mt-4">
+              <button type="submit" class="btn btn-success btn-lg px-5">
+                <i class="bi bi-stars me-2"></i> Find My Best Matched Treks
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if submitted %}
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <h3 class="fw-bold mb-0">
+        <i class="bi bi-bullseye text-success me-2"></i> Top AI Recommendations For You
+      </h3>
+      <span class="text-muted">Ranked by Cosine Similarity & Preference Vectors</span>
+    </div>
+    <hr />
+  </div>
+
+  {% if recommendations %}
+  <div class="row g-4">
+    {% for rec in recommendations %}
+    {% set trek = rec.trek %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow border-0 position-relative">
+        <div class="position-absolute top-0 end-0 m-3" style="z-index: 2;">
+          <span class="badge bg-success fs-6 shadow-sm px-3 py-2">
+            <i class="bi bi-lightning-charge-fill text-warning"></i> {{ rec.score }}% Match
+          </span>
+        </div>
+
+        <!-- Trek Photos Carousel (Slides Form) -->
+        <div id="match-carousel-trek-{{ trek.id }}" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+          <div class="carousel-indicators">
+            {% for img_url in trek.gallery_images %}
+            <button
+              type="button"
+              data-bs-target="#match-carousel-trek-{{ trek.id }}"
+              data-bs-slide-to="{{ loop.index0 }}"
+              class="{% if loop.first %}active{% endif %}"
+              aria-current="{% if loop.first %}true{% else %}false{% endif %}"
+              aria-label="Slide {{ loop.index }}"
+            ></button>
+            {% endfor %}
+          </div>
+          <div class="carousel-inner" style="border-top-left-radius: 15px; border-top-right-radius: 15px; overflow: hidden; height: 220px; background-color: #212529;">
+            {% for img_url in trek.gallery_images %}
+            <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
+              <img
+                src="{{ img_url }}"
+                class="d-block w-100 h-100"
+                style="object-fit: cover;"
+                alt="{{ trek.name }} - View {{ loop.index }}"
+                loading="lazy"
+              />
+              <div class="carousel-caption d-flex justify-content-between align-items-center py-1 px-2" style="background: rgba(0,0,0,0.55); border-radius: 6px; bottom: 8px; left: 8px; right: 8px; font-size: 0.75rem;">
+                <span><i class="bi bi-camera-fill text-warning me-1"></i> Trail View {{ loop.index }}/{{ trek.gallery_images|length }}</span>
+                <span class="badge bg-success">{{ trek.difficulty }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% if trek.gallery_images|length > 1 %}
+          <button class="carousel-control-prev" type="button" data-bs-target="#match-carousel-trek-{{ trek.id }}" data-bs-slide="prev" style="width: 12%; opacity: 0.85;">
+            <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));"></span>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#match-carousel-trek-{{ trek.id }}" data-bs-slide="next" style="width: 12%; opacity: 0.85;">
+            <span class="carousel-control-next-icon" aria-hidden="true" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));"></span>
+            <span class="visually-hidden">Next</span>
+          </button>
+          {% endif %}
+        </div>
+
+        <div class="card-body d-flex flex-column">
+          <div class="mb-2">
+            <span class="badge bg-light text-dark border me-1">
+              <i class="bi bi-geo-alt-fill text-danger"></i> {{ trek.location }}
+            </span>
+            <span class="badge bg-light text-dark border">
+              <i class="bi bi-calendar3 text-primary"></i> {{ trek.duration }} Days
+            </span>
+          </div>
+
+          <h5 class="fw-bold mb-2">{{ trek.name }}</h5>
+
+          <p class="text-muted small mb-3 flex-grow-1">
+            {{ trek.description[:130] }}...
+          </p>
+
+          <div class="mb-3">
+            <div class="small fw-bold text-success mb-1">
+              <i class="bi bi-check2-circle"></i> AI Match Factors:
+            </div>
+            {% for h in rec.highlights %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle me-1 mb-1">
+              {{ h }}
+            </span>
+            {% endfor %}
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-auto">
+            <div>
+              <span class="text-muted small d-block">Price</span>
+              <span class="fw-bold fs-5 text-dark">₹ {{ "{:,.0f}".format(trek.price) }}</span>
+            </div>
+            <div class="d-flex gap-2">
+              <a
+                href="{{ url_for('ai.readiness', trek_id=trek.id) }}"
+                class="btn btn-outline-success btn-sm"
+                title="Check Your Fitness Readiness"
+              >
+                <i class="bi bi-heart-pulse"></i> Prep
+              </a>
+              {% if current_user.is_authenticated and current_user.role == 'user' %}
+              <form action="{{ url_for('user.book_trek', trek_id=trek.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-success btn-sm px-3">
+                  Book Now
+                </button>
+              </form>
+              {% else %}
+              <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-sm px-3">
+                Book
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info text-center py-4">
+    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+    No treks found matching this specific query. Try adjusting your budget or duration parameters!
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+
+{% endblock %}

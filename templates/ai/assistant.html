@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* Fixed Chat Card Sizing & Strict Boundary Encasement */
+  .chat-card-container {
+    height: 650px !important;
+    max-height: 80vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    transform: none !important;
+    transition: none !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 15px !important;
+    background-color: #ffffff;
+  }
+  .chat-card-container:hover {
+    transform: none !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .chat-header-section {
+    flex-shrink: 0 !important;
+  }
+
+  /* Chat Stream: flex-basis 0 and min-height 0 prevents flex container blowout */
+  #chat-stream {
+    flex: 1 1 0px !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scroll-behavior: smooth;
+    padding: 1.25rem;
+    background-color: #f4faf4 !important;
+  }
+
+  /* Quick Prompts Bar: wraps neatly, no horizontal overflow or scroll clipping */
+  .quick-prompts-bar {
+    flex-shrink: 0 !important;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    padding: 10px 14px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .quick-prompt {
+    font-size: 0.82rem !important;
+    padding: 4px 12px !important;
+    border-radius: 50rem !important;
+    transform: none !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+    white-space: nowrap !important;
+  }
+  .quick-prompt:hover,
+  .quick-prompt:focus,
+  .quick-prompt:active {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Chat Input Footer */
+  .chat-footer-section {
+    flex-shrink: 0 !important;
+    background-color: #ffffff;
+    border-top: 1px solid #e9ecef;
+    padding: 12px 16px;
+  }
+
+  /* Message Bubbles: Safe wrapping without overflowing */
+  .chat-bubble {
+    max-width: 85% !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    border-radius: 1rem !important;
+    padding: 0.85rem 1.15rem !important;
+    transform: none !important;
+  }
+  .chat-bubble:hover {
+    transform: none !important;
+  }
+  .chat-bubble-bot {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    color: #212529;
+  }
+  .chat-bubble-user {
+    background-color: #198754;
+    color: #ffffff;
+  }
+</style>
+
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <span class="badge bg-success px-3 py-2 fs-6 mb-2">
+      <i class="bi bi-robot me-1"></i> 24/7 Intelligent Expedition Guide
+    </span>
+    <h1 class="fw-bold">TrekBot — AI Trekking Advisor</h1>
+    <p class="text-muted lead">
+      Chat with our expedition intelligence system for instant route advice, packing checklists, altitude acclimatization guidance, and custom itineraries.
+    </p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Chat Interface -->
+    <div class="col-lg-7">
+      <div class="card chat-card-container border-0">
+        <!-- Header -->
+        <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center chat-header-section">
+          <div class="d-flex align-items-center">
+            <div class="bg-white text-success rounded-circle p-2 me-2" style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-robot fs-5"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold">TrekBot Advisor</h6>
+              <small class="opacity-75">TrekMate AI Guide • Online</small>
+            </div>
+          </div>
+          <span class="badge bg-light text-success">AI Active</span>
+        </div>
+
+        <!-- Chat Stream -->
+        <div class="card-body" id="chat-stream">
+          <!-- Bot Welcome -->
+          <div class="d-flex mb-3">
+            <div class="chat-bubble chat-bubble-bot">
+              <div class="fw-bold text-success mb-1">
+                <i class="bi bi-robot me-1"></i> TrekBot
+              </div>
+              <p class="mb-0">
+                Namaste & Welcome! 🏔️ I am <strong>TrekBot</strong>, your AI trekking advisor. I can help you with gear recommendations, altitude sickness (AMS) safety, fitness planning, or finding the ideal trek on TrekMate.
+              </p>
+              <div class="mt-2 pt-2 border-top small text-muted">
+                Try asking: <em>"What should I pack for a 5-day snow trek?"</em> or <em>"How to prevent altitude sickness?"</em>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Prompts -->
+        <div class="quick-prompts-bar">
+          <button type="button" class="btn btn-sm btn-outline-success quick-prompt" data-query="How to prevent Acute Mountain Sickness (AMS)?">
+            🏔️ AMS Prevention
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success quick-prompt" data-query="What shoes should I buy for Himalayan treks?">
+            🥾 Boot Guide
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success quick-prompt" data-query="What is the 3-layer clothing system?">
+            🧥 3-Layer System
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success quick-prompt" data-query="Recommend beginner treks in Uttarakhand">
+            🎯 Easy Treks
+          </button>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-footer-section">
+          <form id="chat-form" class="d-flex gap-2">
+            <input
+              type="text"
+              id="user-input"
+              class="form-control py-2"
+              placeholder="Ask anything about gear, weather, routes, or safety..."
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="btn btn-success px-4" id="send-btn">
+              <i class="bi bi-send-fill"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side Tools: AI Packing & Itinerary Generator -->
+    <div class="col-lg-5">
+      <!-- Tool 1: AI Packing Generator -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="mb-0 fw-bold text-success">
+            <i class="bi bi-backpack me-2"></i> AI Packing Checklist Generator
+          </h5>
+        </div>
+        <div class="card-body p-3">
+          <p class="small text-muted mb-3">
+            Select a trek to automatically generate an equipment and layering checklist adjusted for duration and difficulty.
+          </p>
+          <div class="input-group mb-3">
+            <select id="packing-trek-select" class="form-select">
+              {% for trek in all_treks %}
+              <option value="{{ trek.id }}">{{ trek.name }} ({{ trek.duration }} Days)</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-success" id="generate-packing-btn">
+              Generate
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tool 2: AI Day-Wise Itinerary Planner -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="mb-0 fw-bold text-success">
+            <i class="bi bi-calendar3-range me-2"></i> AI Itinerary Planner
+          </h5>
+        </div>
+        <div class="card-body p-3">
+          <p class="small text-muted mb-3">
+            Generate an acclimatization-focused, day-by-day expedition schedule with altitude profiles.
+          </p>
+          <div class="input-group mb-3">
+            <select id="itinerary-trek-select" class="form-select">
+              {% for trek in all_treks %}
+              <option value="{{ trek.id }}">{{ trek.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-success" id="generate-itinerary-btn">
+              Plan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Display Area -->
+      <div id="ai-tool-result" class="card shadow-sm border-0 d-none">
+        <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
+          <span class="fw-bold" id="tool-result-title">Result</span>
+          <button type="button" class="btn-close btn-close-white btn-sm" id="close-tool-result"></button>
+        </div>
+        <div class="card-body p-3 overflow-auto" style="max-height: 280px;" id="tool-result-body">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const chatForm = document.getElementById('chat-form');
+  const userInput = document.getElementById('user-input');
+  const chatStream = document.getElementById('chat-stream');
+  const sendBtn = document.getElementById('send-btn');
+
+  function scrollChatToBottom() {
+    requestAnimationFrame(() => {
+      chatStream.scrollTop = chatStream.scrollHeight;
+    });
+  }
+
+  function appendMessage(sender, text, isUser = false) {
+    const wrapper = document.createElement('div');
+    wrapper.className = isUser ? 'd-flex justify-content-end mb-3' : 'd-flex mb-3';
+
+    const bubble = document.createElement('div');
+    bubble.className = isUser
+      ? 'chat-bubble chat-bubble-user'
+      : 'chat-bubble chat-bubble-bot';
+
+    const formattedText = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+
+    if (!isUser) {
+      bubble.innerHTML = `<div class="fw-bold text-success mb-1"><i class="bi bi-robot me-1"></i> TrekBot</div><div class="lh-base">${formattedText}</div>`;
+    } else {
+      bubble.innerHTML = `<div class="lh-base">${formattedText}</div>`;
+    }
+
+    wrapper.appendChild(bubble);
+    chatStream.appendChild(wrapper);
+    scrollChatToBottom();
+  }
+
+  async function handleSend(msg, focusInput = true) {
+    if (!msg || !msg.trim()) return;
+    const cleanMsg = msg.trim();
+    appendMessage('You', cleanMsg, true);
+    userInput.value = '';
+    sendBtn.disabled = true;
+
+    // Loading indicator
+    const loadingId = 'loading-' + Date.now();
+    const loadWrapper = document.createElement('div');
+    loadWrapper.className = 'd-flex mb-3';
+    loadWrapper.id = loadingId;
+    loadWrapper.innerHTML = `
+      <div class="chat-bubble chat-bubble-bot text-muted">
+        <i class="bi bi-robot text-success me-2"></i> Thinking...
+      </div>`;
+    chatStream.appendChild(loadWrapper);
+    scrollChatToBottom();
+
+    try {
+      const response = await fetch("{{ url_for('ai.api_chat') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: cleanMsg })
+      });
+      const data = await response.json();
+      const el = document.getElementById(loadingId);
+      if (el) el.remove();
+      appendMessage('TrekBot', data.reply || "Sorry, I could not process your query right now.");
+    } catch (err) {
+      const el = document.getElementById(loadingId);
+      if (el) el.remove();
+      appendMessage('TrekBot', "Network error connecting to TrekBot. Please try again.");
+    } finally {
+      sendBtn.disabled = false;
+      scrollChatToBottom();
+      if (focusInput && window.innerWidth > 768) {
+        userInput.focus({ preventScroll: true });
+      }
+    }
+  }
+
+  chatForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    handleSend(userInput.value, true);
+  });
+
+  document.querySelectorAll('.quick-prompt').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      const query = this.getAttribute('data-query');
+      handleSend(query, false);
+    });
+  });
+
+  // AI Packing Generator
+  const packBtn = document.getElementById('generate-packing-btn');
+  const packSelect = document.getElementById('packing-trek-select');
+  const resultCard = document.getElementById('ai-tool-result');
+  const resultTitle = document.getElementById('tool-result-title');
+  const resultBody = document.getElementById('tool-result-body');
+  const closeBtn = document.getElementById('close-tool-result');
+
+  closeBtn.addEventListener('click', () => resultCard.classList.add('d-none'));
+
+  packBtn.addEventListener('click', async function () {
+    const trekId = packSelect.value;
+    packBtn.disabled = true;
+    try {
+      const res = await fetch(`/api/ai/packing/${trekId}`);
+      const data = await res.json();
+      resultTitle.textContent = `📋 Packing List: ${data.trek_name}`;
+      let html = `<div class="small text-muted mb-2">Duration: ${data.duration} • Difficulty: ${data.difficulty}</div>`;
+      for (const [category, items] of Object.entries(data.categories)) {
+        html += `<h6 class="fw-bold text-success mt-3 mb-2">${category}</h6><ul class="list-unstyled mb-0">`;
+        items.forEach(it => {
+          html += `<li class="form-check mb-1"><input class="form-check-input" type="checkbox"><label class="form-check-label small">${it}</label></li>`;
+        });
+        html += `</ul>`;
+      }
+      resultBody.innerHTML = html;
+      resultCard.classList.remove('d-none');
+    } catch (e) {
+      alert("Error generating packing list.");
+    } finally {
+      packBtn.disabled = false;
+    }
+  });
+
+  // AI Itinerary Planner
+  const itinBtn = document.getElementById('generate-itinerary-btn');
+  const itinSelect = document.getElementById('itinerary-trek-select');
+
+  itinBtn.addEventListener('click', async function () {
+    const trekId = itinSelect.value;
+    itinBtn.disabled = true;
+    try {
+      const res = await fetch(`/api/ai/itinerary/${trekId}`);
+      const data = await res.json();
+      resultTitle.textContent = `📅 Itinerary: ${data.trek_name}`;
+      let html = `<div class="timeline mt-2">`;
+      data.days.forEach(d => {
+        html += `
+          <div class="mb-3 border-bottom pb-2">
+            <span class="badge bg-success me-1">Day ${d.day}</span>
+            <span class="badge bg-light text-dark border me-1">${d.altitude}</span>
+            <strong class="d-block mt-1">${d.title}</strong>
+            <p class="small text-muted mb-0 mt-1">${d.details}</p>
+          </div>`;
+      });
+      html += `</div>`;
+      resultBody.innerHTML = html;
+      resultCard.classList.remove('d-none');
+    } catch (e) {
+      alert("Error generating itinerary.");
+    } finally {
+      itinBtn.disabled = false;
+    }
+  });
+});
+</script>
+
+{% endblock %}

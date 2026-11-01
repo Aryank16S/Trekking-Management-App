@@ -53,27 +53,52 @@ def login():
         password = request.form.get("password", "")
         remember = request.form.get("remember")
         remember = remember is not None
+
         user = User.query.filter_by(email=email).first()
         if not user:
             flash("Invalid email or password.", "danger")
             return redirect(url_for("auth.login"))
-        if not check_password_hash(user.password, password): #type:ignore
-            flash("Invalid email or password.", "danger")
+
+        # Check 24-Hour Login Limit (Max 3 logins or attempts in 24 hours, controlled by Admin)
+        if user.is_login_locked:
+            flash("Login limit reached! Maximum 3 logins or attempts allowed within 24 hours. Please contact Administrator to unlock your account.", "danger")
             return redirect(url_for("auth.login"))
+
         if user.blacklisted:
             flash("Your account has been blacklisted.", "danger")
             return redirect(url_for("auth.login"))
+
         if not user.approved:
             flash("Your account is waiting for admin approval.", "warning")
             return redirect(url_for("auth.login"))
+
+        if not check_password_hash(user.password, password):
+            user.record_login_attempt(successful=False)
+            db.session.commit()
+            remaining = max(0, 3 - (user.failed_login_attempts or 0))
+            if remaining == 0:
+                flash("Maximum 3 failed attempts exceeded! Account locked for 24 hours. Contact Administrator to unlock.", "danger")
+            else:
+                flash(f"Invalid email or password. You have {remaining} attempt(s) remaining in this 24-hour window.", "danger")
+            return redirect(url_for("auth.login"))
+
+        # Successful login: record and increment 24h count
+        user.record_login_attempt(successful=True)
+        db.session.commit()
+
         login_user(user, remember=remember)
-        flash(f"Welcome {user.name}!", "success")
+        if user.role != "admin":
+            flash(f"Welcome {user.name}! (Daily login: {user.login_count_24h}/3 used in 24 hours)", "success")
+        else:
+            flash(f"Welcome {user.name}!", "success")
+
         if user.role == "admin":
             return redirect(url_for("admin.admin_dashboard"))
         elif user.role == "staff":
             return redirect(url_for("staff.staff_dashboard"))
         else:
             return redirect(url_for("user.user_dashboard"))
+
     return render_template("auth/login.html")
 
 @auth_bp.route("/logout")

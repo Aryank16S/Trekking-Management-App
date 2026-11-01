@@ -1,15 +1,49 @@
+/* ==========================================================================
+   TrekMate Main Stylesheet - Stabilized & Fixed Screen Layout
+   ========================================================================== */
+
+/* 1. Viewport & Body: Lock Horizontal Drift, Enable Smooth Mouse Wheel & Trackpad Scroll */
+html {
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
+    overscroll-behavior-x: none;
+    scroll-behavior: smooth;
+}
+
 body {
     background-color: #f8f9fa;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     color: #212529;
+    overflow-x: hidden;
+    overflow-y: visible;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+main {
+    overflow: visible;
+    width: 100%;
+    max-width: 100%;
 }
 
 a {
     text-decoration: none;
 }
 
+/* Prevent accidental ghost image/link dragging */
+img, a {
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+
 section {
     padding: 60px 0;
+    overflow-x: hidden;
 }
 
 .navbar {
@@ -23,17 +57,18 @@ section {
 
 .nav-link {
     font-weight: 500;
-    transition: 0.3s;
+    transition: color 0.2s ease;
 }
 
 .nav-link:hover {
-    color: #198754 !important;
+    color: #d9ca1f !important;
 }
 
 .hero-section {
     background: linear-gradient(135deg, #198754, #157347);
     color: white;
     padding: 90px 0;
+    overflow-x: hidden;
 }
 
 .hero-section h1 {
@@ -44,21 +79,25 @@ section {
     font-size: 1.1rem;
 }
 
-.hero-image{
-    width:100%;
-    max-width:520px;
-    height:auto;
+.hero-image {
+    width: 100%;
+    max-width: 520px;
+    height: auto;
 }
 
+/* 2. 100% Fixed Cards: Zero Movement / Zero Jitter / Zero Shift */
 .card {
-    border: none;
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 15px;
-    transition: all 0.3s ease;
+    box-sizing: border-box;
+    transform: none !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    transform: none !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08) !important;
+    border-color: rgba(25, 135, 84, 0.25);
 }
 
 .card-img-top {
@@ -66,17 +105,42 @@ section {
     border-top-right-radius: 15px;
 }
 
+/* 3. Dashboard Cards: Fixed, Rock-Solid, Non-Draggable */
+.dashboard-card {
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 15px;
+    overflow: hidden;
+    transform: none !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-card:hover {
+    transform: none !important;
+    box-shadow: 0 8px 20px rgba(25, 135, 84, 0.12) !important;
+    border-color: rgba(25, 135, 84, 0.35);
+}
+
+.dashboard-card i {
+    display: inline-block;
+    transition: transform 0.25s ease;
+    will-change: transform;
+}
+
+.dashboard-card:hover i {
+    transform: scale(1.08);
+}
+
+/* 4. Buttons: Zero Movement on Hover */
 .btn {
     border-radius: 8px;
-    transition: all 0.3s ease;
+    transform: none !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn-success:hover {
-    transform: translateY(-2px);
-}
-
+.btn:hover,
+.btn-success:hover,
 .btn-outline-success:hover {
-    transform: translateY(-2px);
+    transform: none !important;
 }
 
 .form-control,
@@ -87,7 +151,7 @@ section {
 .form-control:focus,
 .form-select:focus {
     border-color: #198754;
-    box-shadow: 0 0 0 0.2rem rgba(25,135,84,0.25);
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
 }
 
 .table {
@@ -105,14 +169,6 @@ section {
     margin: auto;
 }
 
-.dashboard-card i {
-    transition: 0.3s;
-}
-
-.dashboard-card:hover i {
-    transform: scale(1.15);
-}
-
 .feature-icon {
     font-size: 3rem;
     color: #198754;
@@ -126,11 +182,11 @@ img {
     border-radius: 10px;
 }
 
-.about-image{
-    width:100%;
-    height:420px;
-    object-fit:cover;
-    border-radius:15px;
+.about-image {
+    width: 100%;
+    height: 420px;
+    object-fit: cover;
+    border-radius: 15px;
 }
 
 footer {
@@ -138,6 +194,7 @@ footer {
     color: white;
     padding: 20px 0;
     margin-top: 60px;
+    overflow-x: hidden;
 }
 
 footer a {
@@ -152,52 +209,78 @@ footer a:hover {
     border-radius: 10px;
 }
 
+/* 5. Modern Carousel Indicators for Trek Photo Slides */
+.carousel-indicators [data-bs-target] {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin: 0 3px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border: none;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.carousel-indicators .active {
+    opacity: 1;
+    transform: scale(1.25);
+    background-color: #20c997;
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    transition: opacity 0.2s ease;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    opacity: 1 !important;
+}
+
 @media (max-width: 768px) {
-
-    .hero-section{
-        text-align:center;
-        padding:60px 15px;
+    .hero-section {
+        text-align: center;
+        padding: 60px 15px;
     }
 
-    .hero-section h1{
-        font-size:2.4rem;
+    .hero-section h1 {
+        font-size: 2.4rem;
     }
 
-    .hero-section p{
-        font-size:1.1rem;
+    .hero-section p {
+        font-size: 1.1rem;
     }
 
-    .hero-image{
-        max-width:340px;
-        margin:auto;
+    .hero-image {
+        max-width: 340px;
+        margin: auto;
     }
 
-    .hero-section .btn{
-        width:100%;
-        margin-top:10px;
+    .hero-section .btn {
+        width: 100%;
+        margin-top: 10px;
     }
 
-    .about-image{
-        height:250px;
-        margin-top:25px;
+    .about-image {
+        height: 250px;
+        margin-top: 25px;
     }
 
-    .navbar-nav{
-        text-align:center;
-        margin-top:15px;
+    .navbar-nav {
+        text-align: center;
+        margin-top: 15px;
     }
 
-    .navbar-nav .btn{
-        margin:10px 0;
-        width:100%;
+    .navbar-nav .btn {
+        margin: 10px 0;
+        width: 100%;
     }
 
-    .table{
-        font-size:0.9rem;
+    .table {
+        font-size: 0.9rem;
     }
 
-    footer{
-        text-align:center;
+    footer {
+        text-align: center;
     }
-
 }

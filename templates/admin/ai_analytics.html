@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-5">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <span class="badge bg-success px-3 py-2 fs-6 mb-2">
+        <i class="bi bi-graph-up-arrow me-1"></i> Machine Learning Analytics
+      </span>
+      <h2 class="fw-bold mb-0">Trek Demand Forecasting & Price Optimization</h2>
+      <p class="text-muted mb-0">
+        AI predictive occupancy analysis, demand tiering, and revenue optimization.
+      </p>
+    </div>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+    </a>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 border-start border-success border-4 h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-1">Total Platform Capacity</div>
+          <h3 class="fw-bold mb-0 text-dark">{{ analytics.total_capacity }} <span class="fs-6 fw-normal text-muted">slots</span></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 border-start border-primary border-4 h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-1">Total Confirmed Bookings</div>
+          <h3 class="fw-bold mb-0 text-dark">{{ analytics.total_bookings }} <span class="fs-6 fw-normal text-muted">trekkers</span></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 border-start border-warning border-4 h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-1">Overall Capacity Utilization</div>
+          <h3 class="fw-bold mb-0 text-dark">{{ analytics.overall_utilization }}%</h3>
+          <div class="progress mt-2" style="height: 6px;">
+            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ analytics.overall_utilization }}%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 border-start border-info border-4 h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-1">Projected Gross Revenue</div>
+          <h3 class="fw-bold mb-0 text-dark">₹ {{ "{:,.0f}".format(analytics.projected_revenue) }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trek Forecasting Table -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-bar-chart-fill text-success me-2"></i> Trek-Level Demand & Pricing Analysis
+      </h5>
+      <span class="badge bg-light text-dark border">
+        {{ analytics.treks_data|length }} Active Trails Evaluated
+      </span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Trek Name & Location</th>
+              <th>Difficulty</th>
+              <th>Base Price</th>
+              <th>Occupancy / Slots</th>
+              <th>Fill Rate</th>
+              <th>Demand Tier</th>
+              <th>Dynamic Pricing Suggestion</th>
+              <th>AI Operational Strategy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in analytics.treks_data %}
+            <tr>
+              <td>
+                <strong>{{ t.name }}</strong>
+                <div class="small text-muted">
+                  <i class="bi bi-geo-alt"></i> {{ t.location }}
+                </div>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border">
+                  {{ t.difficulty }}
+                </span>
+              </td>
+              <td class="fw-bold text-dark">
+                ₹ {{ "{:,.0f}".format(t.price) }}
+              </td>
+              <td>
+                {{ t.bookings_count }} / {{ t.capacity }}
+                <div class="small text-muted">{{ t.available_slots }} slots remaining</div>
+              </td>
+              <td style="min-width: 140px;">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height: 8px;">
+                    <div
+                      class="progress-bar bg-{{ t.demand_badge }}"
+                      role="progressbar"
+                      style="width: {{ t.fill_rate }}%;"
+                    ></div>
+                  </div>
+                  <span class="small fw-bold">{{ t.fill_rate }}%</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge bg-{{ t.demand_badge }} px-2 py-1">
+                  {{ t.demand_tier }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border fw-semibold">
+                  {{ t.rec_price_delta }}
+                </span>
+              </td>
+              <td class="small text-muted" style="max-width: 250px;">
+                {{ t.action_advice }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,10 +1,22 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash
+from flask import Blueprint, request, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from models import db, Trek, Booking, User
 from werkzeug.utils import secure_filename
 import os
 
 admin_bp = Blueprint("admin", __name__)
+
+def safe_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+def safe_float(value, default=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 @admin_bp.route("/admin/dashboard")
 @login_required
@@ -21,7 +33,7 @@ def admin_treks():
         flash("Access denied.", "danger")
         return redirect(url_for("auth.home"))
     treks = Trek.query.all()
-    return render_template("admin/treks.html",treks=treks)
+    return render_template("admin/treks.html", treks=treks)
 
 @admin_bp.route("/admin/treks/add", methods=["GET", "POST"])
 @login_required
@@ -33,25 +45,38 @@ def add_trek():
         name = request.form.get("name", "").strip()
         location = request.form.get("location", "").strip()
         difficulty = request.form.get("difficulty", "")
-        duration = int(request.form.get("duration", 0))
-        price = float(request.form.get("price", 0))
-        max_participants = int(request.form.get("max_participants", 0))
+        duration = safe_int(request.form.get("duration", 0), 1)
+        price = safe_float(request.form.get("price", 0), 0.0)
+        max_participants = safe_int(request.form.get("max_participants", 0), 10)
         description = request.form.get("description", "").strip()
         image = request.files.get("image")
         image_filename = None
         staff_id = request.form.get("staff_id")
-        staff_id = int(staff_id) if staff_id else None
+        staff_id = safe_int(staff_id) if staff_id else None
+
         if image and image.filename:
             image_filename = secure_filename(image.filename)
-            os.makedirs("static/uploads", exist_ok=True)
-            image.save(os.path.join("static", "uploads", image_filename))
-        trek = Trek(name=name,location=location,difficulty=difficulty,duration=duration,price=price,max_participants=max_participants,description=description,image=image_filename, staff_id = staff_id) #type: ignore
+            upload_dir = current_app.config.get("UPLOAD_FOLDER", os.path.join(current_app.root_path, "static", "uploads"))
+            os.makedirs(upload_dir, exist_ok=True)
+            image.save(os.path.join(upload_dir, image_filename))
+
+        trek = Trek(
+            name=name,
+            location=location,
+            difficulty=difficulty,
+            duration=duration,
+            price=price,
+            max_participants=max_participants,
+            description=description,
+            image=image_filename,
+            staff_id=staff_id
+        )  # type: ignore
         db.session.add(trek)
         db.session.commit()
         flash("Trek added successfully.", "success")
         return redirect(url_for("admin.admin_treks"))
     staff = User.query.filter_by(role="staff", approved=True, blacklisted=False).all()
-    return render_template("admin/add_trek.html", staff = staff)
+    return render_template("admin/add_trek.html", staff=staff)
 
 @admin_bp.route("/admin/treks/edit/<int:trek_id>", methods=["GET", "POST"])
 @login_required
@@ -64,18 +89,21 @@ def edit_trek(trek_id):
         trek.name = request.form.get("name", "").strip()
         trek.location = request.form.get("location", "").strip()
         trek.difficulty = request.form.get("difficulty", "")
-        trek.duration = int(request.form.get("duration", 0))
-        trek.price = float(request.form.get("price", 0))
-        trek.max_participants = int(request.form.get("max_participants", 0))
+        trek.duration = safe_int(request.form.get("duration", 0), 1)
+        trek.price = safe_float(request.form.get("price", 0), 0.0)
+        trek.max_participants = safe_int(request.form.get("max_participants", 0), 10)
         trek.description = request.form.get("description", "").strip()
         staff_id = request.form.get("staff_id")
-        trek.staff_id = int(staff_id) if staff_id else None
+        trek.staff_id = safe_int(staff_id) if staff_id else None
+
         image = request.files.get("image")
         if image and image.filename:
             image_filename = secure_filename(image.filename)
-            os.makedirs("static/uploads", exist_ok=True)
-            image.save(os.path.join("static", "uploads", image_filename))
+            upload_dir = current_app.config.get("UPLOAD_FOLDER", os.path.join(current_app.root_path, "static", "uploads"))
+            os.makedirs(upload_dir, exist_ok=True)
+            image.save(os.path.join(upload_dir, image_filename))
             trek.image = image_filename
+
         db.session.commit()
         flash("Trek updated successfully.", "success")
         return redirect(url_for("admin.admin_treks"))
@@ -96,7 +124,7 @@ def delete_trek(trek_id):
     db.session.commit()
     flash("Trek deleted successfully.", "success")
     return redirect(url_for("admin.admin_treks"))
-    
+
 @admin_bp.route("/admin/bookings")
 @login_required
 def admin_bookings():
@@ -166,3 +194,32 @@ def unblacklist_user(user_id):
     if user.role == "staff":
         return redirect(url_for("admin.admin_staff"))
     return redirect(url_for("admin.admin_users"))
+
+@admin_bp.route("/admin/users/reset-login/<int:user_id>", methods=["POST"])
+@login_required
+def reset_login_limit(user_id):
+    if current_user.role != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("auth.home"))
+    user = User.query.get_or_404(user_id)
+    user.reset_login_limit()
+    db.session.commit()
+    flash(f"Login limit reset successfully for {user.name}. Account is unlocked.", "success")
+    if user.role == "staff":
+        return redirect(url_for("admin.admin_staff"))
+    return redirect(url_for("admin.admin_users"))
+
+@admin_bp.route("/admin/users/lock-login/<int:user_id>", methods=["POST"])
+@login_required
+def lock_user_login(user_id):
+    if current_user.role != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("auth.home"))
+    user = User.query.get_or_404(user_id)
+    user.login_blocked_by_admin = True
+    db.session.commit()
+    flash(f"Login access locked for {user.name} by Administrator.", "warning")
+    if user.role == "staff":
+        return redirect(url_for("admin.admin_staff"))
+    return redirect(url_for("admin.admin_users"))
+

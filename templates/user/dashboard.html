@@ -1,53 +1,244 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block content %}
 
 <div class="container py-5">
-  <h2 class="fw-bold">Welcome, {{ current_user.name }}</h2>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Welcome back, {{ current_user.name }}! 👋</h2>
+      <p class="text-muted mb-0">Plan, assess, and book your mountain expeditions.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('ai.watch_sync') }}" class="btn btn-outline-success">
+        <i class="bi bi-smartwatch me-1"></i> Watch Sync
+      </a>
+      <a href="{{ url_for('ai.matchmaker') }}" class="btn btn-warning text-dark fw-bold">
+        <i class="bi bi-stars me-1"></i> AI Matchmaker
+      </a>
+    </div>
+  </div>
 
-  <p class="text-muted mb-1">User Dashboard</p>
-
-  <p class="text-muted mb-4">Discover and book your next adventure.</p>
-
-  <div class="row g-4">
-    <div class="col-md-4">
-      <div class="card shadow-sm h-100">
-        <div class="card-body text-center">
+  <!-- Dashboard Navigation Cards -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-6 col-lg-4">
+      <div class="card dashboard-card shadow-sm h-100 border-0">
+        <div class="card-body text-center p-4">
           <i class="bi bi-compass fs-1 text-success"></i>
-
-          <h5 class="mt-3">Explore Treks</h5>
-
-          <p class="text-muted">Browse available trekking routes.</p>
-
-          <a href="{{ url_for('user.user_treks') }}" class="btn btn-success"> Explore </a>
+          <h5 class="mt-3 fw-bold">Explore All Treks</h5>
+          <p class="text-muted small">Browse all available Himalayan & Western Ghats trails.</p>
+          <a href="{{ url_for('user.user_treks') }}" class="btn btn-success px-4">
+            Explore Treks
+          </a>
         </div>
       </div>
     </div>
 
-    <div class="col-md-4">
-      <div class="card dashboard-card shadow-sm h-100">
-        <div class="card-body text-center">
+    <div class="col-md-6 col-lg-4">
+      <div class="card dashboard-card shadow-sm h-100 border-0 border-top border-warning border-3">
+        <div class="card-body text-center p-4">
+          <i class="bi bi-stars fs-1 text-warning"></i>
+          <h5 class="mt-3 fw-bold">AI Trek Matchmaker</h5>
+          <p class="text-muted small">Find trails matched to your fitness, days, and budget.</p>
+          <a href="{{ url_for('ai.matchmaker') }}" class="btn btn-warning px-4 text-dark fw-bold">
+            Match Me
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card dashboard-card shadow-sm h-100 border-0 border-top border-danger border-3">
+        <div class="card-body text-center p-4">
+          <i class="bi bi-heart-pulse fs-1 text-danger"></i>
+          <h5 class="mt-3 fw-bold">AI Fitness Readiness</h5>
+          <p class="text-muted small">Calculate your summit readiness score and training plan.</p>
+          <a href="{{ url_for('ai.readiness') }}" class="btn btn-outline-danger px-4">
+            Check Score
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card dashboard-card shadow-sm h-100 border-0 border-top border-success border-3">
+        <div class="card-body text-center p-4">
+          <i class="bi bi-smartwatch fs-1 text-success"></i>
+          <h5 class="mt-3 fw-bold">Smartwatch Sync</h5>
+          <p class="text-muted small">
+            {% if current_user.latest_fitness_data %}
+              Synced: <strong>{{ current_user.latest_fitness_data.device_source }}</strong>
+            {% else %}
+              Connect Garmin, Apple Watch, or Strava GPX.
+            {% endif %}
+          </p>
+          <a href="{{ url_for('ai.watch_sync') }}" class="btn btn-outline-success px-4">
+            {% if current_user.latest_fitness_data %}Manage Watch{% else %}Connect Watch{% endif %}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card dashboard-card shadow-sm h-100 border-0">
+        <div class="card-body text-center p-4">
+          <i class="bi bi-robot fs-1 text-primary"></i>
+          <h5 class="mt-3 fw-bold">TrekBot AI Advisor</h5>
+          <p class="text-muted small">24/7 answers on gear, packing, weather & safety.</p>
+          <a href="{{ url_for('ai.assistant') }}" class="btn btn-outline-primary px-4">
+            Chat with AI
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card dashboard-card shadow-sm h-100 border-0">
+        <div class="card-body text-center p-4">
           <i class="bi bi-backpack fs-1 text-success"></i>
-
-          <h5 class="mt-3">My Bookings</h5>
-
-          <p class="text-muted">View your booked treks.</p>
-
-          <a href="{{ url_for('user.my_bookings') }}" class="btn btn-success"> View </a>
+          <h5 class="mt-3 fw-bold">My Bookings</h5>
+          <p class="text-muted small">View confirmation details or manage your active reservations.</p>
+          <a href="{{ url_for('user.my_bookings') }}" class="btn btn-success px-4">
+            My Bookings
+          </a>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="col-md-4">
-      <div class="card dashboard-card shadow-sm h-100">
-        <div class="card-body text-center">
-          <i class="bi bi-person-circle fs-1 text-success"></i>
+  <!-- Personalized AI Trek Recommendations Section -->
+  {% if recommendations %}
+  <div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="fw-bold mb-0">
+          <i class="bi bi-stars text-warning me-2"></i> Recommended For You (AI Suggestions)
+        </h4>
+        <p class="text-muted small mb-0">Personalized based on optimal duration and difficulty profiles.</p>
+      </div>
+      <a href="{{ url_for('ai.matchmaker') }}" class="btn btn-sm btn-outline-success">
+        Customize Preferences
+      </a>
+    </div>
 
-          <h5 class="mt-3">My Profile</h5>
-
-          <p class="text-muted">Update your profile information.</p>
-
-          <a href="{{ url_for('auth.profile') }}" class="btn btn-success"> Open </a>
+    <div class="row g-4">
+      {% for rec in recommendations %}
+      {% set trek = rec.trek %}
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+          <!-- Trek Photos Carousel (Slides Form) -->
+          <div id="dash-carousel-trek-{{ trek.id }}" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+            <div class="carousel-indicators">
+              {% for img_url in trek.gallery_images %}
+              <button
+                type="button"
+                data-bs-target="#dash-carousel-trek-{{ trek.id }}"
+                data-bs-slide-to="{{ loop.index0 }}"
+                class="{% if loop.first %}active{% endif %}"
+                aria-current="{% if loop.first %}true{% else %}false{% endif %}"
+                aria-label="Slide {{ loop.index }}"
+              ></button>
+              {% endfor %}
+            </div>
+            <div class="carousel-inner" style="border-top-left-radius: 15px; border-top-right-radius: 15px; overflow: hidden; height: 180px; background-color: #212529;">
+              {% for img_url in trek.gallery_images %}
+              <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
+                <img
+                  src="{{ img_url }}"
+                  class="d-block w-100 h-100"
+                  style="object-fit: cover;"
+                  alt="{{ trek.name }} - View {{ loop.index }}"
+                  loading="lazy"
+                />
+                <div class="carousel-caption d-flex justify-content-between align-items-center py-1 px-2" style="background: rgba(0,0,0,0.55); border-radius: 6px; bottom: 6px; left: 6px; right: 6px; font-size: 0.72rem;">
+                  <span><i class="bi bi-camera-fill text-warning me-1"></i> {{ loop.index }}/{{ trek.gallery_images|length }}</span>
+                  <span class="badge bg-success">{{ trek.difficulty }}</span>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% if trek.gallery_images|length > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#dash-carousel-trek-{{ trek.id }}" data-bs-slide="prev" style="width: 12%; opacity: 0.85;">
+              <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#dash-carousel-trek-{{ trek.id }}" data-bs-slide="next" style="width: 12%; opacity: 0.85;">
+              <span class="carousel-control-next-icon" aria-hidden="true" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+            {% endif %}
+          </div>
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-light text-dark border">{{ trek.location }}</span>
+              <span class="badge bg-success">{{ rec.score }}% Match</span>
+            </div>
+            <h6 class="fw-bold mb-1">{{ trek.name }}</h6>
+            <p class="text-muted small mb-3 flex-grow-1">
+              {{ trek.duration }} Days • {{ trek.difficulty }} • ₹ {{ "{:,.0f}".format(trek.price) }}
+            </p>
+            <div class="d-flex gap-2 mt-auto">
+              <a href="{{ url_for('ai.readiness', trek_id=trek.id) }}" class="btn btn-outline-success btn-sm w-50">
+                Check Prep
+              </a>
+              <form action="{{ url_for('user.book_trek', trek_id=trek.id) }}" method="POST" class="w-50">
+                <button type="submit" class="btn btn-success btn-sm w-100">
+                  Book
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- My Recent Bookings Summary -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-calendar-check text-success me-2"></i> Your Recent Bookings
+      </h5>
+      <a href="{{ url_for('user.my_bookings') }}" class="btn btn-sm btn-outline-success">View All</a>
+    </div>
+    <div class="card-body p-0">
+      {% if bookings %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Trek</th>
+              <th>Location</th>
+              <th>Duration</th>
+              <th>Booking Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in bookings %}
+            <tr>
+              <td><strong>{{ booking.trek.name }}</strong></td>
+              <td>{{ booking.trek.location }}</td>
+              <td>{{ booking.trek.duration }} Days</td>
+              <td>{{ booking.booking_date.strftime("%d-%m-%Y") if booking.booking_date else "N/A" }}</td>
+              <td><span class="badge bg-success">{{ booking.status }}</span></td>
+              <td>
+                <form action="{{ url_for('user.cancel_booking', booking_id=booking.id) }}" method="POST" class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-backpack2 fs-2 d-block mb-2 text-secondary"></i>
+        You have no bookings yet. Explore available trails and book your first adventure!
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

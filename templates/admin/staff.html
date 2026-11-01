@@ -1,7 +1,15 @@
 {% extends "base.html" %} {% block content %}
 
 <div class="container py-5">
-  <h2 class="fw-bold mb-4">Staff Management</h2>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Staff Management</h2>
+      <p class="text-muted mb-0">Approve staff registrations and manage 24-hour login permissions.</p>
+    </div>
+    <span class="badge bg-success px-3 py-2">
+      <i class="bi bi-shield-lock me-1"></i> Staff Access Control
+    </span>
+  </div>
 
   {% if staff %}
 
@@ -12,7 +20,8 @@
           <th>ID</th>
           <th>Name</th>
           <th>Email</th>
-          <th>Approved</th>
+          <th>Status</th>
+          <th>Login Limit (24h)</th>
           <th>Blacklisted</th>
           <th>Actions</th>
         </tr>
@@ -23,69 +32,74 @@
 
         <tr>
           <td>{{ member.id }}</td>
-          <td>{{ member.name }}</td>
+          <td><strong>{{ member.name }}</strong></td>
           <td>{{ member.email }}</td>
           <td>
             {% if member.approved %}
-
-            <span class="badge bg-success"> Approved </span>
-
+              <span class="badge bg-success"> Approved </span>
             {% else %}
+              <span class="badge bg-warning text-dark"> Pending </span>
+            {% endif %}
+          </td>
 
-            <span class="badge bg-warning text-dark"> Pending </span>
-
+          <td>
+            {% if member.is_login_locked %}
+              <span class="badge bg-danger">
+                <i class="bi bi-lock-fill me-1"></i> Locked (3/3)
+              </span>
+            {% else %}
+              <span class="badge bg-success">
+                <i class="bi bi-check-circle me-1"></i> {{ member.login_count_24h or 0 }}/3 Logins
+              </span>
             {% endif %}
           </td>
 
           <td>
             {% if member.blacklisted %}
-
-            <span class="badge bg-danger"> Yes </span>
-
+              <span class="badge bg-danger"> Yes </span>
             {% else %}
-
-            <span class="badge bg-success"> No </span>
-
+              <span class="badge bg-success"> No </span>
             {% endif %}
           </td>
 
           <td>
+            <!-- Approve Staff -->
             {% if not member.approved %}
+              <form action="{{ url_for('admin.approve_user', user_id=member.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-success me-1">
+                  Approve
+                </button>
+              </form>
+            {% endif %}
 
-            <form
-              action="{{ url_for('admin.approve_user', user_id=member.id) }}"
-              method="POST"
-              class="d-inline"
-            >
-              <button type="submit" class="btn btn-sm btn-success">
-                Approve
-              </button>
-            </form>
-
-            {% endif %} {% if member.blacklisted %}
-
-            <form
-              action="{{ url_for('admin.unblacklist_user', user_id=member.id) }}"
-              method="POST"
-              class="d-inline"
-            >
-              <button type="submit" class="btn btn-sm btn-primary">
-                Unblacklist
-              </button>
-            </form>
-
+            <!-- Unlock / Lock Login -->
+            {% if member.is_login_locked %}
+              <form action="{{ url_for('admin.reset_login_limit', user_id=member.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-success me-1" title="Reset limit & unlock staff login">
+                  <i class="bi bi-unlock-fill"></i> Unlock Login
+                </button>
+              </form>
             {% else %}
+              <form action="{{ url_for('admin.lock_user_login', user_id=member.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-warning text-dark me-1" title="Lock staff login access">
+                  <i class="bi bi-lock-fill"></i> Lock
+                </button>
+              </form>
+            {% endif %}
 
-            <form
-              action="{{ url_for('admin.blacklist_user', user_id=member.id) }}"
-              method="POST"
-              class="d-inline"
-            >
-              <button type="submit" class="btn btn-sm btn-danger">
-                Blacklist
-              </button>
-            </form>
-
+            <!-- Blacklist / Unblacklist -->
+            {% if member.blacklisted %}
+              <form action="{{ url_for('admin.unblacklist_user', user_id=member.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-primary">
+                  Unblacklist
+                </button>
+              </form>
+            {% else %}
+              <form action="{{ url_for('admin.blacklist_user', user_id=member.id) }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  Blacklist
+                </button>
+              </form>
             {% endif %}
           </td>
         </tr>

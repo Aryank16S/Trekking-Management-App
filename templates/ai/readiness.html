@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <span class="badge bg-success px-3 py-2 fs-6 mb-2">
+      <i class="bi bi-activity me-1"></i> Sports Physiology & ML Assessment
+    </span>
+    <h1 class="fw-bold">Trek Fitness & Readiness Evaluator</h1>
+    <p class="text-muted lead">
+      Calculate your physical readiness, altitude risk level, and receive a customized pre-trek conditioning plan.
+    </p>
+
+    <!-- Smartwatch Integration Pill / Alert -->
+    <div class="mt-3">
+      {% if watch_data %}
+      <div class="alert alert-success d-inline-flex align-items-center py-2 px-3 shadow-sm border-0 rounded-pill">
+        <i class="bi bi-smartwatch text-success fs-5 me-2"></i>
+        <span>
+          Connected to <strong>{{ watch_data.device_source }}</strong> •
+          Resting HR: <strong>{{ watch_data.resting_heart_rate|round(0)|int if watch_data.resting_heart_rate else "--" }} BPM</strong> •
+          VO2 Max: <strong>{{ watch_data.vo2_max if watch_data.vo2_max else "--" }}</strong> •
+          Active: <strong>{{ watch_data.weekly_active_hours }} hrs/wk</strong>
+        </span>
+        <a href="{{ url_for('ai.watch_sync') }}" class="btn btn-sm btn-success rounded-pill ms-3 py-0 px-2">
+          Sync Update
+        </a>
+      </div>
+      {% else %}
+      <a href="{{ url_for('ai.watch_sync') }}" class="badge bg-light text-dark border text-decoration-none py-2 px-3 rounded-pill shadow-sm">
+        <i class="bi bi-smartwatch text-success me-1"></i> Have a fitness watch? Connect Garmin, Apple Watch, or Strava for automatic biometric sync &rarr;
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-5 justify-content-center">
+    <!-- Input Form -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-success text-white py-3">
+          <h5 class="mb-0">
+            <i class="bi bi-person-walking me-2"></i> Your Profile & Target Trail
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('ai.readiness') }}">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Select Target Trek</label>
+              <select name="trek_id" class="form-select" required>
+                {% for trek in all_treks %}
+                <option
+                  value="{{ trek.id }}"
+                  {% if selected_trek and selected_trek.id == trek.id %}selected{% endif %}
+                >
+                  {{ trek.name }} ({{ trek.difficulty }} • {{ trek.duration }} Days • {{ trek.location }})
+                </option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Model adjusts for altitude gain, days on trail, and gradient.</div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Your Age</label>
+                <input
+                  type="number"
+                  name="age"
+                  class="form-control"
+                  value="{{ age }}"
+                  min="14"
+                  max="80"
+                  required
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold">
+                  Weekly Cardio (Hours)
+                  {% if watch_data %}
+                  <span class="badge bg-success-subtle text-success small">Watch Synced</span>
+                  {% endif %}
+                </label>
+                <input
+                  type="number"
+                  name="weekly_exercise"
+                  class="form-control"
+                  value="{{ weekly_exercise }}"
+                  min="0"
+                  max="30"
+                  step="0.1"
+                  required
+                />
+                <div class="form-text">Active endurance training hours.</div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Number of Prior Treks Completed</label>
+              <input
+                type="number"
+                name="prior_treks"
+                class="form-control"
+                value="{{ prior_treks }}"
+                min="0"
+                max="50"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch mb-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="high_alt_exp"
+                  id="high_alt_exp"
+                  value="yes"
+                  {% if high_alt_exp %}checked{% endif %}
+                />
+                <label class="form-check-label fw-semibold" for="high_alt_exp">
+                  Prior High-Altitude Experience (> 9,000 ft)
+                </label>
+              </div>
+
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="has_medical"
+                  id="has_medical"
+                  value="yes"
+                  {% if has_medical %}checked{% endif %}
+                />
+                <label class="form-check-label fw-semibold" for="has_medical">
+                  Any Asthma, Knee, Heart or Chronic Condition
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fs-5 mt-3 shadow-sm">
+              <i class="bi bi-calculator me-2"></i> Evaluate My Readiness Score
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prediction Results -->
+    <div class="col-lg-6">
+      {% if assessment %}
+      <div class="card shadow border-0 rounded-4 h-100">
+        <div class="card-header bg-white py-3 border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">
+              <i class="bi bi-speedometer2 text-success me-2"></i> AI Assessment Result
+            </h5>
+            <span class="badge bg-{{ assessment.risk_badge }} fs-6 px-3 py-2">
+              {{ assessment.risk_level }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card-body p-4 text-center">
+          <div class="my-3">
+            <div class="display-2 fw-bold text-{{ assessment.risk_badge }} mb-1">
+              {{ assessment.readiness_pct }}%
+            </div>
+            <div class="text-uppercase fw-bold text-muted small tracking-wide">
+              Physical Readiness Index
+            </div>
+          </div>
+
+          <div class="progress mb-4" style="height: 12px; border-radius: 6px;">
+            <div
+              class="progress-bar bg-{{ assessment.risk_badge }}"
+              role="progressbar"
+              style="width: {{ assessment.readiness_pct }}%;"
+            ></div>
+          </div>
+
+          <h5 class="fw-bold text-dark mb-2">{{ assessment.verdict }}</h5>
+          <p class="text-muted mb-3">{{ assessment.summary }}</p>
+
+          <!-- Wearable Telemetry Influence Badge Section -->
+          {% if assessment.biometrics_applied %}
+          <div class="bg-success-subtle p-3 rounded-3 text-start mb-3 border border-success-subtle">
+            <div class="fw-bold text-success small mb-1">
+              <i class="bi bi-smartwatch me-1"></i> Biometrics Ingested from {{ assessment.device_source or 'Smartwatch' }}:
+            </div>
+            <ul class="mb-0 ps-3 small text-success-emphasis">
+              {% for bio in assessment.biometrics_applied %}
+              <li>{{ bio }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          <div class="text-start bg-light p-3 rounded-3 mb-4">
+            <h6 class="fw-bold text-success mb-2">
+              <i class="bi bi-lightbulb-fill text-warning me-1"></i> AI Tailored Training Regimen:
+            </h6>
+            <ul class="mb-0 ps-3">
+              {% for tip in assessment.tips %}
+              <li class="mb-1 text-secondary small">{{ tip }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          {% if selected_trek %}
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <div class="text-start">
+              <small class="text-muted d-block">Target Trail</small>
+              <strong>{{ selected_trek.name }}</strong>
+            </div>
+            {% if current_user.is_authenticated and current_user.role == 'user' %}
+            <form action="{{ url_for('user.book_trek', trek_id=selected_trek.id) }}" method="POST">
+              <button type="submit" class="btn btn-success px-4">
+                Confirm Booking
+              </button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-success px-4">
+              Login to Book
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="card border-0 shadow-sm bg-light text-center h-100 d-flex justify-content-center p-5 rounded-4">
+        <div>
+          <i class="bi bi-heart-pulse-fill fs-1 text-success opacity-50 mb-3 d-block"></i>
+          <h4 class="fw-bold text-secondary">Awaiting Your Evaluation</h4>
+          <p class="text-muted mb-4">
+            Select a target trek and review your training routine (or connect your fitness watch) to see your calculated summit readiness score, safety category, and customized prep plan.
+          </p>
+          <a href="{{ url_for('ai.watch_sync') }}" class="btn btn-outline-success">
+            <i class="bi bi-smartwatch me-1"></i> Connect Smartwatch Telemetry
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
